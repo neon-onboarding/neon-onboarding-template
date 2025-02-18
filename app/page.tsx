@@ -1,101 +1,160 @@
-import Image from "next/image";
+import db from "@/db";
+import { todosTable } from "@/db/schema";
+import { eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
+import { PAGE_TITLE } from "./page-title";
 
-export default function Home() {
+const addTodo = async (formData: FormData) => {
+  "use server";
+  const title = formData.get("title")?.toString();
+  if (!title) return;
+  await db.insert(todosTable).values({ title }).returning();
+  revalidatePath(".");
+};
+
+const removeTodo = async (id: string) => {
+  "use server";
+  await db.delete(todosTable).where(eq(todosTable.id, id));
+  revalidatePath(".");
+};
+
+export default async function Home() {
+  const todos = await db.select().from(todosTable);
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
+    <div className="min-h-screen flex flex-col gap-4 p-4 justify-center max-w-screen-md mx-auto">
+      <div className="my-8 self-center">
+        <div className="text-center text-5xl mb-4">🎉</div>
+        <div className="text-center text-5xl mb-8 tracking-tighter font-bold">
+          {PAGE_TITLE}
+        </div>
+        <div className="my-2 font-bold">
+          This is a fully functional todo app hosted on Vercel backed by your
+          Neon database.
+        </div>
+        <div className="my-2 text-sm">
+          It has a GitHub Actions CI/CD setup to automatically deploy the
+          &quot;production&quot; version from the main branch, and a
+          &quot;preview&quot; version from every pull request.
+        </div>
+        <div className="my-2 text-sm">
+          The code is here:{" "}
           <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+            href={`https://github.com/${process.env.NEXT_PUBLIC_GITHUB_REPOSITORY}/tree/${process.env.NEXT_PUBLIC_GITHUB_REF}`}
             target="_blank"
-            rel="noopener noreferrer"
+            className="font-mono text-xs underline text-green-600"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
+            github.com/{process.env.NEXT_PUBLIC_GITHUB_REPOSITORY}
           </a>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+        <div className="my-2">
+          — <br />
+          This is{" "}
+          {process.env.NEXT_PUBLIC_GITHUB_REF === "main"
+            ? 'the "production" version'
+            : 'a "preview" version'}
+          . It uses:
+          <ul className="ml-2 mt-2 list-disc list-inside text-sm leading-loose">
+            <li>
+              the{" "}
+              <span className="font-mono text-xs px-2 py-1 mx-1 bg-gray-400/40 rounded-full">
+                {process.env.NEXT_PUBLIC_GITHUB_REF}
+              </span>{" "}
+              branch of the git repo
+            </li>
+            <li>
+              the{" "}
+              <span className="font-mono text-xs px-2 py-1 mx-1 bg-gray-400/40 rounded-full">
+                {process.env.NEXT_PUBLIC_GITHUB_REF}
+              </span>{" "}
+              branch of your database
+            </li>
+          </ul>
+        </div>
+
+        <div className="my-2">
+          — <br />
+          <div>Now, your move:</div>
+          <ol className="ml-6 mt-2 list-decimal list-outside text-sm">
+            <li className="mb-2">
+              Add some to-dos first — you&apos;ll see how they&apos;ll also
+              appear in your preview deployment. This is because of the
+              branching capabilities Neon databases have.
+            </li>
+            <li>
+              Use this box to create a pull request editing the title of this
+              page:
+              <form
+                action={addTodo}
+                className="inline-flex gap-2 items-baseline ml-2 leading-normal"
+              >
+                <input
+                  placeholder={PAGE_TITLE}
+                  required
+                  type="text"
+                  name="title"
+                  id="title"
+                  className="bg-inherit text-inherit rounded border border-gray-500/50 focus:border-foreground outline-none px-2 py-1 flex-1"
+                />
+                <button
+                  type="submit"
+                  className="font-bold rounded bg-gray-400/40 px-2 py-1"
+                >
+                  Open PR
+                </button>
+                <br />
+              </form>
+            </li>
+            <div className="mt-2 leading-tight opacity-50">
+              <em className="text-xs">
+                We need you to use this box because the repo is still under our
+                GitHub org and GitHub Actions enforces limitations for security
+                reasons on &quot;foreign&quot; pull-requests workflows.
+              </em>
+            </div>
+          </ol>
+        </div>
+      </div>
+      <div className="rounded border p-6 border-gray-500/90">
+        <h1 className="text-2xl font-bold tracking-tight mb-4">To-dos</h1>
+        {todos.length === 0 && (
+          <div className="text-xs opacity-60">
+            (no to-dos — create one below ⬇️)
+          </div>
+        )}
+        <ul className="list-disc list-inside">
+          {todos.map((todo) => (
+            <li key={todo.id} className="my-1">
+              <span>{todo.title}</span>
+              <button
+                onClick={removeTodo.bind(null, todo.id)}
+                className="float-end text-xs mt-1 opacity-50 px-1"
+              >
+                remove
+              </button>
+            </li>
+          ))}
+        </ul>
+        <h2 className="text-xl font-bold tracking-tight border-t border-gray-500/50 py-4 mt-8">
+          Add to-do
+        </h2>
+        <form action={addTodo} className="flex gap-3 items-baseline">
+          <label htmlFor="title">Title:</label>
+          <input
+            autoFocus
+            required
+            type="text"
+            name="title"
+            id="title"
+            className="bg-inherit text-inherit rounded border border-gray-500/50 focus:border-foreground outline-none px-3 py-2 flex-1"
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+          <button
+            type="submit"
+            className="font-bold rounded bg-gray-400/40 px-3 py-2"
+          >
+            Add
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
