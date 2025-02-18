@@ -1,0 +1,27 @@
+name: GitHub Actions Neon+Vercel Production Deployment
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  Deploy-Production:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Vercel & Neon CLI
+        run: npm i -g vercel neonctl
+      - name: Install Dependencies
+        run: npm ci
+      - name: Get Neon Connection String
+        run: echo "DATABASE_URL=$(neon connection-string --api-key ${{ secrets.NEON_API_KEY }} --project-id ${{ vars.NEON_PROJECT_ID }} --pooled main)" >> "$GITHUB_ENV"
+      - name: Push Database Schema
+        run: npx drizzle-kit push
+      - name: Build Project Artifacts
+        run: vercel build --prod --yes --token=${{ secrets.VERCEL_API_KEY }}
+        env:
+          NEXT_PUBLIC_GITHUB_REPOSITORY: ${{ github.repository }}
+          NEXT_PUBLIC_GITHUB_REF: ${{ github.ref_name }}
+      - name: Deploy Project Artifacts to Vercel
+        run: vercel deploy --prod --prebuilt --token=${{ secrets.VERCEL_API_KEY }} --env DATABASE_URL=$DATABASE_URL
