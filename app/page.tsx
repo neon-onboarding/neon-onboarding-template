@@ -18,11 +18,16 @@ const removeTodo = async (id: string) => {
   revalidatePath(".");
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function Home() {
-  const todos = await db.select().from(todosTable);
+  const todos = await db
+    .select()
+    .from(todosTable)
+    .orderBy(todosTable.created_at);
   return (
-    <div className="min-h-screen flex flex-col gap-4 p-4 justify-center max-w-screen-md mx-auto">
-      <div className="my-8 self-center">
+    <div className="min-h-screen flex flex-col gap-8 p-4 md:py-12 justify-center max-w-screen-md mx-auto">
+      <div className="self-center">
         <div className="text-center text-5xl mb-4">🎉</div>
         <div className="text-center text-5xl mb-8 tracking-tighter font-bold">
           {PAGE_TITLE}
@@ -64,7 +69,7 @@ export default async function Home() {
             <li>
               the{" "}
               <span className="font-mono text-xs px-2 py-1 mx-1 bg-gray-400/40 rounded-full">
-                {process.env.NEXT_PUBLIC_GITHUB_REF}
+                {process.env.NEXT_PUBLIC_NEON_BRANCH}
               </span>{" "}
               branch of your database
             </li>

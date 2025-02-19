@@ -1,12 +1,16 @@
-name: GitHub Actions Neon+Vercel Production Deployment
+name: Neon+Vercel Production Deployment
 
 on:
   push:
     branches:
       - main
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+
 jobs:
-  Deploy-Production:
+  deploy_prod:
+    name: Deploy Production
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,6 +26,7 @@ jobs:
         run: vercel build --prod --yes --token=${{ secrets.VERCEL_API_KEY }}
         env:
           NEXT_PUBLIC_GITHUB_REPOSITORY: ${{ github.repository }}
-          NEXT_PUBLIC_GITHUB_REF: ${{ github.ref_name }}
+          NEXT_PUBLIC_GITHUB_REF: main
+          NEXT_PUBLIC_NEON_BRANCH: main
       - name: Deploy Project Artifacts to Vercel
         run: vercel deploy --prod --prebuilt --token=${{ secrets.VERCEL_API_KEY }} --env DATABASE_URL=$DATABASE_URL

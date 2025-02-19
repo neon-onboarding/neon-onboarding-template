@@ -1,0 +1,52 @@
+name: Neon+Vercel Preview Deployment
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  deploy_preview:
+    name: Deploy Preview
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Vercel CLI
+        run: npm i -g vercel
+      - name: Install Dependencies
+        run: npm ci
+      - name: Create Neon Branch
+        id: create_neon_branch
+        uses: neondatabase/create-branch-action@v5
+        with:
+          project_id: ${{ vars.NEON_PROJECT_ID }}
+          branch_name: preview/pr${{ github.event.number }}
+          api_key: ${{ secrets.NEON_API_KEY }}
+      - name: Export Neon Connection String
+        run: echo "DATABASE_URL=${{ steps.create_neon_branch.outputs.db_url_with_pooler }}" >> "$GITHUB_ENV"
+      - name: Push Database Schema
+        run: npx drizzle-kit push
+      - name: Build Project Artifacts
+        run: vercel build --yes --token=${{ secrets.VERCEL_API_KEY }}
+        env:
+          NEXT_PUBLIC_GITHUB_REPOSITORY: ${{ github.repository }}
+          NEXT_PUBLIC_GITHUB_REF: ${{ github.head_ref }}
+          NEXT_PUBLIC_NEON_BRANCH: preview/pr${{ github.event.number }}
+      - name: Deploy Project Artifacts to Vercel
+        run: echo "VERCEL_DEPLOYMENT_URL=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_API_KEY }} --env DATABASE_URL=$DATABASE_URL)" >> "$GITHUB_ENV"
+      - name: Alias the deployment
+        run: vercel alias $VERCEL_DEPLOYMENT_URL ${{ github.event.repository.name }}-pr${{ github.event.number }}.vercel.app --token=${{ secrets.VERCEL_API_KEY }}
+      - name: Comment on Pull Request
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          message: |
+            Vercel Preview URL :rocket: : https://${{ github.event.repository.name }}-pr${{ github.event.number }}.vercel.app
+            Neon branch :elephant: : https://console.neon.tech/app/projects/${{ vars.NEON_PROJECT_ID }}/branches/${{ steps.create_neon_branch.outputs.outputs.branch_id }}
