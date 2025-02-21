@@ -145,7 +145,6 @@ export default async function Home() {
         <form action={addTodo} className="flex gap-3 items-baseline">
           <label htmlFor="title">Title:</label>
           <input
-            autoFocus
             required
             type="text"
             name="title"
