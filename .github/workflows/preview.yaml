@@ -37,7 +37,10 @@ jobs:
         env:
           NEXT_PUBLIC_GITHUB_REPOSITORY: ${{ github.repository }}
           NEXT_PUBLIC_GITHUB_REF: ${{ github.head_ref }}
+          NEXT_PUBLIC_GITHUB_PULL_NUMBER: ${{ github.event.number }}
           NEXT_PUBLIC_NEON_BRANCH: preview/pr${{ github.event.number }}
+          NEXT_PUBLIC_NEON_ONBOARDING_ID: ${{ vars.NEON_ONBOARDING_ID }}
+          NEXT_PUBLIC_NEON_ONBOARDING_ORIGIN: ${{ vars.NEON_ONBOARDING_ORIGIN }}
       - name: Deploy Project Artifacts to Vercel
         run: echo "VERCEL_DEPLOYMENT_URL=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_API_KEY }} --env DATABASE_URL=$DATABASE_URL)" >> "$GITHUB_ENV"
       - name: Alias the deployment

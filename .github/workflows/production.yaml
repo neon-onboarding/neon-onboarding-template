@@ -26,5 +26,7 @@ jobs:
           NEXT_PUBLIC_GITHUB_REPOSITORY: ${{ github.repository }}
           NEXT_PUBLIC_GITHUB_REF: main
           NEXT_PUBLIC_NEON_BRANCH: main
+          NEXT_PUBLIC_NEON_ONBOARDING_ID: ${{ vars.NEON_ONBOARDING_ID }}
+          NEXT_PUBLIC_NEON_ONBOARDING_ORIGIN: ${{ vars.NEON_ONBOARDING_ORIGIN }}
       - name: Deploy Project Artifacts to Vercel
         run: vercel deploy --prod --prebuilt --token=${{ secrets.VERCEL_API_KEY }} --env DATABASE_URL=$DATABASE_URL
